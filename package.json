@@ -1,0 +1,18 @@
+{
+  "name": "dont-scroll",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Une PWA absurde qui t'envoie une phrase par heure pour lâcher ton écran ou croire en toi.",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "vapid": "web-push generate-vapid-keys"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.35.0",
+    "web-push": "^3.6.7"
+  }
+}

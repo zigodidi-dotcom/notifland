@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Don't scroll.</title>
+  <meta name="description" content="Une phrase par heure pour lâcher ton écran ou croire en toi. Pas d'inscription.">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Don't scroll.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 34rem; }
+    h1 {
+      font-size: clamp(3rem, 14vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+      margin: 0 0 1.5rem;
+    }
+    p {
+      font-size: 1.125rem;
+      line-height: 1.5;
+      color: #fff;
+      opacity: 0.75;
+      margin: 0 0 2.5rem;
+    }
+    button {
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: transparent;
+      border: 1.5px solid #fff;
+      border-radius: 999px;
+      padding: 0.9rem 1.75rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    button:hover:not(:disabled), button:focus-visible { background: #fff; color: #000; outline: none; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    #status { min-height: 1.5em; margin: 1.25rem 0 0; font-size: 0.9rem; opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Don't scroll.</h1>
+    <p>Accepte les notifications. Toutes les heures, une phrase au hasard pour lâcher ton écran ou croire en toi. C'est tout.</p>
+    <button id="enable" type="button">Activer les notifications</button>
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const button = document.getElementById('enable');
+    const status = document.getElementById('status');
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+    function say(text) { status.textContent = text; }
+    function done() {
+      button.textContent = 'Notifications activées';
+      button.disabled = true;
+    }
+
+    function urlBase64ToUint8Array(base64) {
+      const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+      const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
+      return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    }
+
+    async function saveSubscription(subscription) {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription),
+      });
+      if (!res.ok) throw new Error('subscribe ' + res.status);
+    }
+
+    const registration = supported ? navigator.serviceWorker.register('/sw.js') : null;
+
+    // Déjà abonné sur cet appareil ? On l'affiche, et on resynchronise au passage.
+    if (registration) {
+      registration.then(async (reg) => {
+        const existing = await reg.pushManager.getSubscription();
+        if (existing && Notification.permission === 'granted') {
+          done();
+          saveSubscription(existing).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+
+    button.addEventListener('click', async () => {
+      if (isIOS && !isStandalone) {
+        say("Sur iPhone : touche Partager, puis « Sur l'écran d'accueil ». Ouvre ensuite le site depuis l'icône.");
+        return;
+      }
+      if (!supported) {
+        say('Ce navigateur ne gère pas les notifications push.');
+        return;
+      }
+
+      button.disabled = true;
+      say('');
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          say('Notifications refusées. Tu peux les réautoriser dans les réglages du navigateur.');
+          button.disabled = false;
+          return;
+        }
+
+        const reg = await navigator.serviceWorker.ready;
+        let subscription = await reg.pushManager.getSubscription();
+        if (!subscription) {
+          const { publicKey } = await fetch('/api/subscribe').then((r) => r.json());
+          subscription = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+          });
+        }
+        await saveSubscription(subscription);
+        done();
+        say('Prochaine phrase dans moins d’une heure. Pose ton téléphone.');
+      } catch (err) {
+        console.error(err);
+        say('Ça n’a pas marché. Réessaie dans un instant.');
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
