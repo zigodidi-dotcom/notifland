@@ -1,5 +1,5 @@
-// Service worker de Don't scroll.
-const CACHE = 'dont-scroll-v1';
+// Service worker de COGITOBE
+const CACHE = 'cogitobe-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -42,14 +42,14 @@ self.addEventListener('push', (event) => {
   } catch {
     data = { title: event.data ? event.data.text() : '' };
   }
-  const title = data.title || "Don't scroll.";
+  const title = data.title || 'COGITOBE';
 
   event.waitUntil(
     self.registration.showNotification(title, {
       lang: data.lang || 'fr',
       icon: '/icons/icon-192.png',
       badge: '/icons/badge-96.png',
-      tag: 'dont-scroll', // une seule notification à la fois, la nouvelle remplace l'ancienne
+      tag: 'cogitobe', // une seule notification à la fois, la nouvelle remplace l'ancienne
       renotify: true,
       data: { url: '/' },
     })

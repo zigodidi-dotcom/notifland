@@ -1,8 +1,8 @@
 {
-  "name": "dont-scroll",
+  "name": "cogitobe",
   "version": "1.0.0",
   "private": true,
-  "description": "Une PWA absurde qui t'envoie une phrase par heure pour lâcher ton écran ou croire en toi.",
+  "description": "COGITOBE — une PWA absurde qui t'envoie une phrase par heure pour lâcher ton écran ou croire en toi.",
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
