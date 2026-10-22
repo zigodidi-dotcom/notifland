@@ -81,6 +81,13 @@ Les mails partent via [Resend](https://resend.com) (gratuit jusqu'à 3 000 mails
 
 Un mail part à 1 000, 2 000… inscrits, une seule fois par palier, et un dernier « complet » à 8 000. Si `RESEND_API_KEY` manque, l'inscription fonctionne quand même ; l'alerte est seulement écrite dans les logs Vercel. Les mails venant de `resend.dev` peuvent arriver en spam : pense à vérifier ce dossier au premier palier.
 
+Pour tester la configuration sans attendre 1 000 inscrits :
+
+```bash
+curl -H "Authorization: Bearer $STATS_SECRET" https://cogitobe.vercel.app/api/test-mail
+# {"sent":true,"to":"…","id":"…"}  ou  {"sent":false,"status":403,"error":"…"} avec la raison donnée par Resend
+```
+
 ### 5. Envoi horaire avec cron-job.org
 
 Le cron gratuit de Vercel ne tourne qu'une fois par jour, on passe donc par cron-job.org (gratuit) :
